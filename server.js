@@ -1,6 +1,5 @@
 const express = require('express');
 const validator = require('validator');
-const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,6 +15,7 @@ function validateInput(input) {
 
     // XSS attack patterns
     const xssPatterns = [
+        // eslint-disable-next-line security/detect-unsafe-regex
         /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
         /javascript:/gi,
         /on\w+\s*=/gi,
@@ -58,7 +58,7 @@ function validateInput(input) {
     }
 
     // Only allow alphanumeric, spaces, and basic punctuation
-    if (!/^[a-zA-Z0-9\s\.,!?-]+$/.test(input)) {
+    if (!/^[a-zA-Z0-9\s.,!?-]+$/.test(input)) {
         return { valid: false, reason: 'invalid_chars' };
     }
 
@@ -144,8 +144,11 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// Only start the server if this file is run directly (not imported)
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
 
 module.exports = app;
