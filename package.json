@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "test": "jest",
-    "test:ui": "node ui-tests.js"
+    "test:ui": "node ui-tests.js",
+    "test:ui-enhanced": "node enhanced-ui-tests.js",
+    "test:all": "npm test && npm run test:ui-enhanced"
   },
   "dependencies": {
     "express": "^4.18.2",

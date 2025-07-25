@@ -94,20 +94,50 @@ jobs:
           - 4444:4444
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         
     - name: Install dependencies
-      run: npm install # Runs in the root directory
+      run: npm install
         
-    - name: Start application
+    - name: Start application in background
       run: |
-        node server.js & # Start your application (server.js) in the background
-        sleep 10 # Give the application more time to start up
+        node server.js &
+        echo $! > server.pid
+        sleep 10
+        
+    - name: Wait for server to be ready
+      run: |
+        for i in {1..30}; do
+          if curl -f http://localhost:3000/health; then
+            echo "Server is ready!"
+            break
+          fi
+          echo "Waiting for server... ($i/30)"
+          sleep 2
+        done
+        
+    - name: Wait for Selenium to be ready
+      run: |
+        for i in {1..20}; do
+          if curl -f http://localhost:4444/wd/hub/status; then
+            echo "Selenium is ready!"
+            break
+          fi
+          echo "Waiting for Selenium... ($i/20)"
+          sleep 3
+        done
         
     - name: Run UI tests
-      run: npm run test:ui # Runs in the root directory
+      run: node ui-tests.js
+      
+    - name: Stop server
+      run: |
+        if [ -f server.pid ]; then
+          kill $(cat server.pid) || true
+          rm server.pid
+        fi
