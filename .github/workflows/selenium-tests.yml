@@ -28,7 +28,7 @@ jobs:
 
       - name: Prepare artifacts
         run: |
-          tar -czvf www-build.tar.gz ./package.json ./src/server.js tests
+          tar -czvf www-build.tar.gz ./package.json server.js tests
           ls -l
 
       - name: Upload artifacts
