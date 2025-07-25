@@ -1,0 +1,113 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Integration Testing
+  integration-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install # Runs in the root directory
+        
+    - name: Run tests
+      run: npm test # Runs in the root directory
+
+  # Dependency Check
+  dependency-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+        
+    - name: Run npm audit
+      run: npm audit --audit-level=moderate
+      continue-on-error: true
+
+  # ESLint Security Check
+  eslint-security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Node.js dependencies (for ESLint and plugins)
+        # This step ensures that ESLint and eslint-plugin-security are installed
+        # as local devDependencies in your package.json.
+        # Make sure to add them to your package.json:
+        # npm install --save-dev eslint eslint-plugin-security
+        run: npm install
+
+      - name: Run ESLint Security (for JS if any)
+        run: |
+          # Check if server.js exists in the root directory
+          if [ -f "server.js" ]; then
+            # Run ESLint on server.js using npx, which looks for local installations.
+            # It's highly recommended to configure ESLint plugins and rules in a .eslintrc.js
+            # or .eslintrc.json file in your project's root directory.
+            # Example .eslintrc.js:
+            # module.exports = {
+            #   plugins: ['security'],
+            #   rules: {
+            #     'security/detect-eval-with-expression': 'error',
+            #     // Add other security rules as needed
+            #   }
+            # };
+            # The '|| true' allows the workflow to continue even if linting warnings/errors occur.
+            # Remove '|| true' for stricter enforcement where linting issues will fail the job.
+            npx eslint server.js --plugin security --rule 'security/detect-eval-with-expression: error' || true
+          else
+            echo "server.js not found in the root directory, skipping ESLint security check."
+          fi
+
+  # UI Testing with Selenium
+  ui-test:
+    runs-on: ubuntu-latest
+    services:
+      selenium:
+        image: selenium/standalone-chrome:latest
+        options: --shm-size=2gb
+        ports:
+          - 4444:4444
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install # Runs in the root directory
+        
+    - name: Start application
+      run: |
+        node server.js & # Start your application (server.js) in the background
+        sleep 10 # Give the application more time to start up
+        
+    - name: Run UI tests
+      run: npm run test:ui # Runs in the root directory
